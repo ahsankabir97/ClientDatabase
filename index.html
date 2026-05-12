@@ -612,13 +612,15 @@ function formatTime(ts){
 setFbStatus('loading','Connecting...');
 
 entriesRef.on('value', snap => {
-  entries = [];
-  snap.forEach(child => entries.unshift({_fbKey:child.key,...child.val()}));
-  setFbStatus('connected','Live');
+  entries = []; // আগে clear করো
+  snap.forEach(child => {
+    entries.push({_fbKey: child.key, ...child.val()}); // unshift এর বদলে push
+  });
+  entries.reverse(); // এরপর reverse করলে newest first হবে
+  setFbStatus('connected', 'Live');
   renderTable();
-  console.log('Firebase updated, entries count:', entries.length);
 }, err => {
-  setFbStatus('error','Connection Error');
+  setFbStatus('error', 'Connection Error');
   showToast('Firebase error: ' + err.message, 'error');
   const sk = document.getElementById('skeletonRow');
   if(sk) sk.remove();
@@ -668,54 +670,50 @@ async function deleteEntry(fbKey){
 }
 
 function renderTable(){
-  const searchEl = document.getElementById('searchBox');
-  const btsEl    = document.getElementById('filterBts');
-  const mediaEl  = document.getElementById('filterMedia');
-
-  const q      = searchEl ? searchEl.value.toLowerCase() : '';
-  const btsF   = btsEl   ? btsEl.value   : '';
-  const mediaF = mediaEl ? mediaEl.value  : '';
-
-  const filtered = entries.filter(e=>{
-    const mq = !q||[e.id,e.name,e.bts,e.ip,e.port,e.media,e.clientIp,e.vlan]
-                   .some(v=>(v||'').toLowerCase().includes(q));
-    return mq&&(!btsF||e.bts===btsF)&&(!mediaF||e.media===mediaF);
-  });
-
   const tbody = document.getElementById('tableBody');
-  const empty = document.getElementById('emptyMsg');
-  const ci    = document.getElementById('countInfo');
-  const sk    = document.getElementById('skeletonRow');
+  if(!tbody) return;
+
+  const sk = document.getElementById('skeletonRow');
   if(sk) sk.remove();
 
-  if(!tbody) return; // safety check
+  const q      = (document.getElementById('searchBox')?.value || '').toLowerCase();
+  const btsF   = document.getElementById('filterBts')?.value || '';
+  const mediaF = document.getElementById('filterMedia')?.value || '';
 
-  if(filtered.length===0){
-    tbody.innerHTML=''; 
-    if(empty) empty.style.display='block';
-    if(ci) ci.textContent = entries.length>0 
+  const filtered = entries.filter(e => {
+    const mq = !q || [e.id, e.name, e.bts, e.ip, e.port, e.media, e.clientIp, e.vlan]
+                     .some(v => (v || '').toLowerCase().includes(q));
+    return mq && (!btsF || e.bts === btsF) && (!mediaF || e.media === mediaF);
+  });
+
+  const empty = document.getElementById('emptyMsg');
+  const ci    = document.getElementById('countInfo');
+
+  if(filtered.length === 0){
+    tbody.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+    if(ci) ci.textContent = entries.length > 0
       ? `${entries.length} total entries — none match filters` : '';
   } else {
-    if(empty) empty.style.display='none';
-    if(ci) ci.textContent = `${entries.length} total entr${entries.length===1?'y':'ies'}` +
-                     (filtered.length<entries.length ? ` — showing ${filtered.length}` : '');
-    tbody.innerHTML = filtered.map((e,i)=>`
+    if(empty) empty.style.display = 'none';
+    if(ci) ci.textContent = `${entries.length} total entr${entries.length === 1 ? 'y' : 'ies'}` +
+                    (filtered.length < entries.length ? ` — showing ${filtered.length}` : '');
+    tbody.innerHTML = filtered.map((e, i) => `
       <tr>
         <td style="color:var(--blue-400);font-size:12px;">${i+1}</td>
         <td style="color:var(--blue-600);font-size:13px;">${e.id||'—'}</td>
         <td style="font-size:13px;">${e.name||'—'}</td>
         <td><span style="background:#e8f4fd;color:var(--blue-800);padding:2px 9px;border-radius:5px;font-size:12px;font-weight:800;">${e.bts||'—'}</span></td>
-        <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;letter-spacing:0.02em;">${e.ip||'—'}</td>
+        <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;">${e.ip||'—'}</td>
         <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;">${e.port||'—'}</td>
         <td><span class="badge ${badgeClass(e.media||'')}">${e.media||'—'}</span></td>
-        <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;letter-spacing:0.02em;">${e.clientIp||'—'}</td>
+        <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;">${e.clientIp||'—'}</td>
         <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;font-weight:700;">${e.vlan||'—'}</td>
         <td style="font-size:11px;color:var(--blue-400);font-weight:700;">${formatTime(e.timestamp)}</td>
-        <td><button class="btn-del" onclick="deleteEntry('${e._fbKey}')" title="Delete entry" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
+        <td><button class="btn-del" onclick="deleteEntry('${e._fbKey}')" title="Delete" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
       </tr>`).join('');
   }
-}
-function downloadExcel(){
+}function downloadExcel(){
   const headers = ['#','Client ID','Client Name','BTS Name','Router/SW IP','Port','Media','Client IP','VLAN','Added At'];
   const q      = document.getElementById('searchBox').value.toLowerCase();
   const btsF   = document.getElementById('filterBts').value;
