@@ -102,15 +102,15 @@ body{font-family:var(--font-body);background:#eaf6f0;min-height:100vh;}
   background:rgba(255,255,255,0.95);
   border:1px solid var(--blue-100);
   border-radius:var(--radius-lg);
-  padding:1.4rem 1.6rem 1.5rem;
+  padding:0.75rem 1.6rem 1rem;
   margin-bottom:1rem;
   box-shadow:0 4px 20px rgba(12,68,124,0.08),0 1px 4px rgba(12,68,124,0.05);
 }
 .card-title{
   font-size:14px;font-weight:800;color:var(--blue-800);
-  margin-bottom:1rem;display:flex;align-items:center;gap:7px;
+  margin-bottom:0.5rem;display:flex;align-items:center;gap:7px;
   font-family:var(--font-head);letter-spacing:0.06em;
-  text-transform:uppercase;padding-bottom:0.75rem;
+  text-transform:uppercase;padding-bottom:0.5rem;
   border-bottom:2px solid var(--blue-50);
 }
 
@@ -377,6 +377,64 @@ th:nth-child(11){width:4%}
 <body>
 <h2 class="sr-only">Client Connection Management — Firebase Realtime Database</h2>
 <div id="toast" class="toast"></div>
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay" style="
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(135deg,#0d1f3c,#0e3d52);
+  display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:2.5rem;width:320px;box-shadow:0 8px 40px rgba(0,0,0,0.3);">
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:900;color:#0C447C;">Link3 Technologies Ltd.</div>
+      <div style="font-size:12px;color:#888;margin-top:4px;">Client Connection Management</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:800;color:#185FA5;text-transform:uppercase;letter-spacing:0.06em;">Username</label>
+      <input id="loginUser" type="text" placeholder="Enter your username"
+        style="width:100%;height:42px;padding:0 12px;border:1.5px solid #b5d4f4;border-radius:8px;margin-top:5px;font-size:13px;outline:none;box-sizing:border-box;"/>
+    </div>
+    <div style="margin-bottom:18px;">
+      <label style="font-size:11px;font-weight:800;color:#185FA5;text-transform:uppercase;letter-spacing:0.06em;">Password</label>
+      <input id="loginPass" type="password" placeholder="••••••••"
+        style="width:100%;height:42px;padding:0 12px;border:1.5px solid #b5d4f4;border-radius:8px;margin-top:5px;font-size:13px;outline:none;box-sizing:border-box;"/>
+    </div>
+    <div id="loginErr" style="color:#c0392b;font-size:12px;font-weight:700;margin-bottom:10px;display:none;">Invalid username or password!</div>
+<button onclick="doLogin()"
+  style="width:100%;height:44px;border:none;border-radius:8px;background:linear-gradient(90deg,#0C447C,#0F6E56);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">
+  Login
+</button>
+
+<!-- এখানে বসাবে 👇 -->
+<div style="text-align:center;margin-top:14px;">
+  <span onclick="showChangePassword()"
+    style="font-size:12px;color:#185FA5;font-weight:700;cursor:pointer;
+    text-decoration:underline;font-family:'Roboto Serif',serif;">
+    Change Password
+  </span>
+</div>
+<div id="changePwSection" style="display:none;margin-top:16px;border-top:1px solid #e0eaf5;padding-top:16px;">
+  <div style="font-size:13px;font-weight:800;color:#0C447C;margin-bottom:12px;">Change Password</div>
+  <input id="cpUser" type="text" placeholder="Username"
+    style="width:100%;height:42px;padding:0 12px;border:1.5px solid #b5d4f4;border-radius:8px;margin-bottom:8px;font-size:13px;outline:none;box-sizing:border-box;"/>
+  <input id="cpOld" type="password" placeholder="Current Password"
+    style="width:100%;height:42px;padding:0 12px;border:1.5px solid #b5d4f4;border-radius:8px;margin-bottom:8px;font-size:13px;outline:none;box-sizing:border-box;"/>
+  <input id="cpNew" type="password" placeholder="New Password"
+    style="width:100%;height:42px;padding:0 12px;border:1.5px solid #b5d4f4;border-radius:8px;margin-bottom:8px;font-size:13px;outline:none;box-sizing:border-box;"/>
+  <input id="cpConfirm" type="password" placeholder="Confirm New Password"
+    style="width:100%;height:42px;padding:0 12px;border:1.5px solid #b5d4f4;border-radius:8px;margin-bottom:10px;font-size:13px;outline:none;box-sizing:border-box;"/>
+  <div id="cpMsg" style="font-size:12px;font-weight:700;margin-bottom:8px;display:none;"></div>
+  <div style="display:flex;gap:8px;">
+    <button onclick="doChangePassword()"
+      style="flex:1;height:40px;border:none;border-radius:8px;background:linear-gradient(90deg,#0C447C,#0F6E56);color:#fff;font-size:13px;font-weight:800;cursor:pointer;">
+      Update Password
+    </button>
+    <button onclick="hideChangePassword()"
+      style="height:40px;padding:0 16px;border:1.5px solid #b5d4f4;border-radius:8px;background:#fff;color:#0C447C;font-size:13px;font-weight:800;cursor:pointer;">
+      Cancel
+    </button>
+  </div>
+</div>
+  </div>
+</div>
 
 <div class="page-bg">
 
@@ -398,12 +456,29 @@ th:nth-child(11){width:4%}
         </div>
       </div>
       <div class="header-right" style="flex-direction:column;align-items:flex-end;gap:5px;">
-        <div class="fb-status">
-          <div class="fb-dot loading" id="fbDot"></div>
-          <span id="fbLabel">Connecting...</span>
-        </div>
-        <div class="prepared-by">Prepared by: AHSANUL KABIR</div>
-      </div>
+  
+  <!-- Row 1: Live status + Username একসাথে -->
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div class="fb-status">
+      <div class="fb-dot loading" id="fbDot"></div>
+      <span id="fbLabel">Connecting...</span>
+    </div>
+    <div id="userInfo" style="display:none;align-items:center;gap:6px;
+      background:rgba(255,255,255,0.08);padding:4px 12px;border-radius:99px;
+      border:1px solid rgba(255,255,255,0.15);cursor:pointer;"
+      onclick="doLogout()" title="Click to logout">
+      <i class="ti ti-user-circle" style="color:#4ECFA8;font-size:14px;"></i>
+      <span id="userNameDisplay" style="font-size:12px;font-weight:800;
+        color:rgba(255,255,255,0.9);font-family:var(--font-body);
+        letter-spacing:0.04em;text-transform:uppercase;"></span>
+      <i class="ti ti-logout" style="color:#f0c040;font-size:13px;"></i>
+    </div>
+  </div>
+
+  <!-- Row 2: Prepared by নিচে ডানে -->
+  <div class="prepared-by">Prepared by: AHSANUL KABIR</div>
+
+</div>
     </div>
     <div class="header-strip"></div>
   </div>
@@ -571,6 +646,47 @@ th:nth-child(11){width:4%}
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
+const USERS = {
+  ahsan:   { password: "78773597in", role: "admin" },
+  tamim:   { password: "tamim@123",  role: "user"  },
+  amit:    { password: "amit@123",   role: "user"  },
+  rupchan: { password: "rupchan@123",role: "user"  }
+};
+function showChangePassword(){
+  document.getElementById('changePwSection').style.display='block';
+}
+function hideChangePassword(){
+  document.getElementById('changePwSection').style.display='none';
+  ['cpUser','cpOld','cpNew','cpConfirm'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cpMsg').style.display='none';
+}
+function doChangePassword(){
+  const user    = document.getElementById('cpUser').value.trim().toLowerCase();
+  const oldPw   = document.getElementById('cpOld').value;
+  const newPw   = document.getElementById('cpNew').value;
+  const confirm = document.getElementById('cpConfirm').value;
+  const msg     = document.getElementById('cpMsg');
+  if(!user||!oldPw||!newPw||!confirm){
+    msg.style.display='block';msg.style.color='#c0392b';
+    msg.textContent='All fields are required.'; return;
+  }
+  if(!USERS[user]||USERS[user].password!==oldPw){
+    msg.style.display='block';msg.style.color='#c0392b';
+    msg.textContent='Invalid username or current password.'; return;
+  }
+  if(newPw.length < 6){
+    msg.style.display='block';msg.style.color='#c0392b';
+    msg.textContent='New password must be at least 6 characters.'; return;
+  }
+  if(newPw!==confirm){
+    msg.style.display='block';msg.style.color='#c0392b';
+    msg.textContent='Passwords do not match.'; return;
+  }
+  USERS[user].password = newPw;
+  msg.style.display='block';msg.style.color='#0F6E56';
+  msg.textContent='Password updated successfully!';
+  setTimeout(()=>hideChangePassword(), 2000);
+}
 const firebaseConfig = {
   apiKey:            "AIzaSyABZGZTKcVCacvYeTiQBqgakn9ABJysm3c",
   authDomain:        "motijheelzoneclients.firebaseapp.com",
@@ -585,7 +701,8 @@ firebase.initializeApp(firebaseConfig);
 const db         = firebase.database();
 const entriesRef = db.ref('clients');
 let entries = [];
-
+let currentUser = '';
+let currentRole = '';
 function setFbStatus(state, label){
   document.getElementById('fbDot').className = 'fb-dot ' + state;
   document.getElementById('fbLabel').textContent = label;
@@ -710,7 +827,7 @@ function renderTable(){
         <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;">${e.clientIp||'—'}</td>
         <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;font-weight:700;">${e.vlan||'—'}</td>
         <td style="font-size:11px;color:var(--blue-400);font-weight:700;">${formatTime(e.timestamp)}</td>
-        <td><button class="btn-del" onclick="deleteEntry('${e._fbKey}')" title="Delete" aria-label="Delete"><i class="ti ti-trash"></i></button></td>
+        <td>${currentRole==='admin' ? `<button class="btn-del" onclick="deleteEntry('${e._fbKey}')" title="Delete" aria-label="Delete"><i class="ti ti-trash"></i></button>` : ''}</td>
       </tr>`).join('');
   }
 }function downloadExcel(){
@@ -739,6 +856,36 @@ function renderTable(){
   showToast('File downloaded!','success');
 }
 
+function doLogout(){
+  if(!confirm('Are you sure you want to logout?')) return;
+  currentUser = '';
+  currentRole = '';
+  localStorage.removeItem('ccm_user');
+  document.getElementById('userInfo').style.display = 'none';
+  document.getElementById('userNameDisplay').textContent = '';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginErr').style.display = 'none';
+  document.getElementById('loginOverlay').style.display = 'flex';
+  renderTable();
+}
+
+function doLogin(){
+  const username = document.getElementById('loginUser').value.trim().toLowerCase();
+  const password = document.getElementById('loginPass').value;
+  if(USERS[username] && USERS[username].password === password){
+    document.getElementById('loginOverlay').style.display='none';
+    currentUser = username;
+    currentRole = USERS[username].role;
+    localStorage.setItem('ccm_user', username);
+    document.getElementById('userNameDisplay').textContent = username;
+    document.getElementById('userInfo').style.display = 'flex';
+    renderTable();
+  } else {
+    document.getElementById('loginErr').style.display='block';
+  }
+}
+
 function switchTab(tab){
   document.getElementById('panelForm').classList.toggle('active', tab==='form');
   document.getElementById('panelDb').classList.toggle('active', tab==='db');
@@ -746,6 +893,17 @@ function switchTab(tab){
   document.getElementById('tabBtnDb').classList.toggle('active', tab==='db');
   if(tab==='db') renderTable(); // ← এই line যোগ করুন
 }
+// Auto-login on refresh
+(function(){
+  const saved = localStorage.getItem('ccm_user');
+  if(saved && USERS[saved]){
+    currentUser = saved;
+    currentRole = USERS[saved].role;
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('userNameDisplay').textContent = saved;
+    document.getElementById('userInfo').style.display = 'flex';
+  }
+})();
 </script>
 </body>
 </html>
