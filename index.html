@@ -211,8 +211,9 @@ input:focus,.field select:focus{
 .count-info{font-size:12px;color:var(--teal-600);font-weight:800;font-family:var(--font-body);margin-bottom:7px;}
 
 /* ── TABLE ── */
-.table-wrap{overflow-x:auto;border-radius:var(--radius-md);border:1px solid var(--blue-100);box-shadow:0 2px 12px rgba(12,68,124,0.07);}
+.table-wrap{overflow-x:auto;overflow-y:auto;max-height:80vh;border-radius:var(--radius-md);border:1px solid var(--blue-100);box-shadow:0 2px 12px rgba(12,68,124,0.07);}
 table{width:100%;border-collapse:collapse;font-size:12px;table-layout:auto;}
+thead{position:sticky;top:0;z-index:10;}
 thead tr{background:linear-gradient(90deg,#0C447C,#0e5c6e);}
 th{
   padding:11px 8px;font-size:11px;font-weight:800;text-transform:uppercase;
@@ -463,7 +464,8 @@ th:nth-child(11){width:4%}
           <label><i class="ti ti-wave-sine"></i> Media</label>
           <select id="media">
             <option value="">— Select Media —</option>
-            <option>P2P [MC]</option><option>P2P [SFP]</option><option>P2M</option>
+            <option>P2P [MC]</option><option>P2P [SFP]</option><option>P2M</option><option>UTP</option>
+<option>Logical</option>
           </select>
         </div>
       </div>
@@ -520,7 +522,8 @@ th:nth-child(11){width:4%}
         </select>
         <select class="fsel" id="filterMedia" onchange="renderTable()">
           <option value="">All Media</option>
-          <option>P2P [MC]</option><option>P2P [SFP]</option><option>P2M</option>
+          <option>P2P [MC]</option><option>P2P [SFP]</option><option>P2M</option><option>UTP</option>
+<option>Logical</option>
         </select>
       </div>
 
@@ -613,6 +616,7 @@ entriesRef.on('value', snap => {
   snap.forEach(child => entries.unshift({_fbKey:child.key,...child.val()}));
   setFbStatus('connected','Live');
   renderTable();
+  console.log('Firebase updated, entries count:', entries.length);
 }, err => {
   setFbStatus('error','Connection Error');
   showToast('Firebase error: ' + err.message, 'error');
@@ -644,6 +648,7 @@ async function addEntry(){
     msg.style.display='inline-flex';
     setTimeout(()=>msg.style.display='none',2200);
     showToast('Entry saved to Firebase!','success');
+switchTab('db');
   } catch(e){
     showToast('Save failed: '+e.message,'error');
   } finally {
@@ -663,35 +668,46 @@ async function deleteEntry(fbKey){
 }
 
 function renderTable(){
-  const q      = document.getElementById('searchBox').value.toLowerCase();
-  const btsF   = document.getElementById('filterBts').value;
-  const mediaF = document.getElementById('filterMedia').value;
+  const searchEl = document.getElementById('searchBox');
+  const btsEl    = document.getElementById('filterBts');
+  const mediaEl  = document.getElementById('filterMedia');
+
+  const q      = searchEl ? searchEl.value.toLowerCase() : '';
+  const btsF   = btsEl   ? btsEl.value   : '';
+  const mediaF = mediaEl ? mediaEl.value  : '';
+
   const filtered = entries.filter(e=>{
-    const mq = !q||[e.id,e.name,e.bts,e.ip,e.port,e.media,e.clientIp,e.vlan].some(v=>(v||'').toLowerCase().includes(q));
+    const mq = !q||[e.id,e.name,e.bts,e.ip,e.port,e.media,e.clientIp,e.vlan]
+                   .some(v=>(v||'').toLowerCase().includes(q));
     return mq&&(!btsF||e.bts===btsF)&&(!mediaF||e.media===mediaF);
   });
+
   const tbody = document.getElementById('tableBody');
   const empty = document.getElementById('emptyMsg');
   const ci    = document.getElementById('countInfo');
   const sk    = document.getElementById('skeletonRow');
   if(sk) sk.remove();
 
+  if(!tbody) return; // safety check
+
   if(filtered.length===0){
-    tbody.innerHTML=''; empty.style.display='block';
-    ci.textContent = entries.length>0 ? `${entries.length} total entries — none match filters` : '';
+    tbody.innerHTML=''; 
+    if(empty) empty.style.display='block';
+    if(ci) ci.textContent = entries.length>0 
+      ? `${entries.length} total entries — none match filters` : '';
   } else {
-    empty.style.display='none';
-    ci.textContent = `${entries.length} total entr${entries.length===1?'y':'ies'}` +
+    if(empty) empty.style.display='none';
+    if(ci) ci.textContent = `${entries.length} total entr${entries.length===1?'y':'ies'}` +
                      (filtered.length<entries.length ? ` — showing ${filtered.length}` : '');
     tbody.innerHTML = filtered.map((e,i)=>`
       <tr>
         <td style="color:var(--blue-400);font-size:12px;">${i+1}</td>
-        <td style="color:var(--blue-600);font-size:13px;">${e.id}</td>
-        <td style="font-size:13px;">${e.name}</td>
-        <td><span style="background:#e8f4fd;color:var(--blue-800);padding:2px 9px;border-radius:5px;font-size:12px;font-weight:800;">${e.bts}</span></td>
-        <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;letter-spacing:0.02em;">${e.ip}</td>
-        <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;">${e.port}</td>
-        <td><span class="badge ${badgeClass(e.media)}">${e.media}</span></td>
+        <td style="color:var(--blue-600);font-size:13px;">${e.id||'—'}</td>
+        <td style="font-size:13px;">${e.name||'—'}</td>
+        <td><span style="background:#e8f4fd;color:var(--blue-800);padding:2px 9px;border-radius:5px;font-size:12px;font-weight:800;">${e.bts||'—'}</span></td>
+        <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;letter-spacing:0.02em;">${e.ip||'—'}</td>
+        <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;">${e.port||'—'}</td>
+        <td><span class="badge ${badgeClass(e.media||'')}">${e.media||'—'}</span></td>
         <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;letter-spacing:0.02em;">${e.clientIp||'—'}</td>
         <td style="font-family:var(--font-mono);font-size:12px;color:#0e5c6e;font-weight:700;">${e.vlan||'—'}</td>
         <td style="font-size:11px;color:var(--blue-400);font-weight:700;">${formatTime(e.timestamp)}</td>
@@ -699,7 +715,6 @@ function renderTable(){
       </tr>`).join('');
   }
 }
-
 function downloadExcel(){
   const headers = ['#','Client ID','Client Name','BTS Name','Router/SW IP','Port','Media','Client IP','VLAN','Added At'];
   const q      = document.getElementById('searchBox').value.toLowerCase();
@@ -731,6 +746,7 @@ function switchTab(tab){
   document.getElementById('panelDb').classList.toggle('active', tab==='db');
   document.getElementById('tabBtnForm').classList.toggle('active', tab==='form');
   document.getElementById('tabBtnDb').classList.toggle('active', tab==='db');
+  if(tab==='db') renderTable(); // ← এই line যোগ করুন
 }
 </script>
 </body>
